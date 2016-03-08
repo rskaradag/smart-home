@@ -1,10 +1,14 @@
-from flask import Flask, jsonify, abort, request, make_response, url_for
+from flask import Flask,render_template, jsonify, abort, request, make_response, url_for
 from flask.ext.httpauth import HTTPBasicAuth
-from flask.ext.sqlalchemy import SQLAlchemy
+
+from content_management import *
+
+TOPIC_DICT = Content()
 
 app = Flask(__name__)
+#app.config.from_pyfile('config.py')
 auth = HTTPBasicAuth()
-
+#db=SQLAlchemy(app)
 
 @auth.verify_password
 def verify_password(username, password):
@@ -12,6 +16,14 @@ def verify_password(username, password):
         return True
     return False
 
+
+@app.route('/')
+def homepage():
+  return render_template("main.html")
+
+@app.route('/dashboard/')
+def dashboard():
+  return render_template("dashboard.html", TOPIC_DICT = TOPIC_DICT)
 
 @app.route('/home',methods=['GET','POST'])
 def index():
