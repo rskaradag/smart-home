@@ -25,83 +25,21 @@
 	
 	
 	
-	<ul class="nav navbar-nav navbar-right">
+		<ul class="nav navbar-nav navbar-right">
+			  
+			 <div style="margin-right: 10px; margin-left: 15px; margin-top: 5px; margin-bottom: 5px;"  class="container-fluid">
+				<h5>
+
+				<a href="/support-donate/"> <span class="glyphicon glyphicon-heart"></span> Support   </a>
+		
+				<a href="/login/"><span class="glyphicon glyphicon-log-in"></span> Login   </a>
+		 
 		  
-		  <div style="margin-right: 10px; margin-left: 15px; margin-top: 5px; margin-bottom: 5px;"  class="container-fluid">
-			<h5>
+			  <a href="/register/"><span class="glyphicon glyphicon-pencil"></span> Sign up</a><h5>
 
-			<a href="/support-donate/"> <span class="glyphicon glyphicon-heart"></span> Support   </a>
-	
-			<a data-toggle="modal" data-target="#exampleModal" href="#"><span class="glyphicon glyphicon-log-in"></span> Login   </a>
-      
-			<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModal" aria-hidden="true">
-				<div class="modal-dialog">
-            
-            <div class="modal-content">
-  						<div class="modal-header">
-  							<button type="button" class="close" data-dismiss="modal">&times;</button>
-  								<h4 class="modal-title" id="exampleModalLabel">Login</h4>
-  						</div>
-						<div class="modal-body">
-							<div class="container-fluid">
-								<form action="" class="form-inline" method="post">
-									<input type="text" class="form-control" placeholder="Username" name="username" value="">
-									<input type="password" class="form-control" placeholder="Password" name="password" value="">
-									<input class="btn btn-primary" type="submit" value="Login">
-								</form>						  
-								<div class="container">
-									<br>
-									<p>No account? <a href='/register'>Register here</a>.</p>
-									<br>							
-								</div>
-							</div>
-						</div>
-
-					</div>
-            
-				</div>
 			</div>
-      
-      
-		  <a role="presentation" class="active" data-toggle="modal" data-target="#register" href="#"><span class="glyphicon glyphicon-pencil"></span> Sign up</a><h5>
-      <div class="modal fade" id="register" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-					<div class="modal-dialog">
-						<div class="modal-content">
-							<div class="modal-header">
-								<button type="button" class="close" data-dismiss="modal">&times;</button>
-								<h4 class="modal-title" id="exampleModalLabel">Register</h4>
-							</div>
-							<div class="modal-body">
-								<div class="container">
-							  
-									<form method=post action="/register">
-										<dl>
-									
-											<dt><label for="username">Username</label></dt>
-											<dd><input id="username" name="username" type="text" value=""></dd>									  
-																																				
-											<dt><label for="email">Email Address</label></dt>
-											<dd><input id="email" name="email" type="text" value=""></dd>									
-																												
-											<dt><label for="password">New Password</label></dt>
-											<dd><input id="password" name="password" type="password" value=""> </dd>
-						
-											<dt><label for="confirm">Repeat Password</label></dt>
-											<dd><input id="confirm" name="confirm" type="password" value=""></dd>										 
-																	
-											<dt><label for="accept_tos">I accept the <a href="/about/tos" target="blank">Terms of Service</a> and <a href="/about/privacy-policy" target="blank">Privacy Notice</a> (updated Jan 22, 2015)</label></dt>
-											<dd><input id="accept_tos" name="accept_tos" type="checkbox" value="y"></dd>
 
-										</dl>
-                    <p><input type=submit value=Register>
-									</form>							  
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-
-	</ul>
+		</ul>
 	</div>
 
 </header>
@@ -109,7 +47,18 @@
 <body>
 
     <div class="container-fluid" align="center" style="min-height:100%">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-warning alert-dismissible" role="alert" > {{ message }}
+          <button type="button" class="close" data-dismiss="alert" arial-label="Close">
+             <span aria-hidden="true">&times;</span>
+          </button>          
+          </div>
+        {% endfor %}
+      {% endif %}
     
+    {% endwith %}
      {% block body%} {% endblock %}
     
     </div>
