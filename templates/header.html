@@ -1,52 +1,53 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
-	<meta charset="utf-8">
+	<meta charset="utf-16">
 	<title>Smart Home System</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
 	<link rel="shortcut icon" href="{{ url_for('static', filename='house.ico') }}">
+
+
 </head>
 
-<header>
-	<div class="navbar-header">
-      <a class="navbar-brand" href="/">
-	  <img style="max-width:50px; margin-top: -7px;" src="{{ url_for('static', filename='images/mainlogo.png') }}">
-	  </a>
-    </div>
-	
-	
-	<div class = "container-fluid">
-
-		<a href="/dashboard/"><button type="button" class="btn btn-primary" aria-label="Left Align" style="margin-top: 5px; margin-bottom: 5px; height: 44px; margin-right: 15px">
-		  <span class="glyphicon glyphicon-off" aria-hidden="true"></span> Go to anywhere
-		</button></a>
-
+<header style="max-width:800px" align="center">
 	
 	
 	
-		<ul class="nav navbar-nav navbar-right">
-			  
-			 <div style="margin-right: 10px; margin-left: 15px; margin-top: 5px; margin-bottom: 5px;"  class="container-fluid">
-				<h5>
-
-				<a href="/support-donate/"> <span class="glyphicon glyphicon-heart"></span> Support   </a>
+	<div class = "container-fluid" align="center">
+	
+		<div class="navbar-header">
+			<a class="navbar-brand" href="/">
+			<img style="max-width:50px; margin-top: -7px;" src="{{ url_for('static', filename='images/mainlogo.png') }}">
+			</a>
+			<a href="/dashboard/"><button type="button" class="btn btn-primary" aria-label="Left Align" style="margin-top: 5px; margin-bottom: 5px; height: 44px; margin-right: 15px">
+			<span class="glyphicon glyphicon-off" aria-hidden="true"></span> Go to anywhere
+			</button></a>
+		</div>
 		
-				<a href="/login/"><span class="glyphicon glyphicon-log-in"></span> Login   </a>
-		 
-		  
-			  <a href="/register/"><span class="glyphicon glyphicon-pencil"></span> Sign up</a><h5>
-
+		<ul class="nav navbar-nav navbar-right">		  
+			<div style="margin-right: 10px; margin-left: 15px; margin-top: 5px; margin-bottom: 5px;"  class="container-fluid">
+				<h5>
+					
+					{% if session.logged_in %}					
+						<a href="/support-donate/"> <span class="glyphicon glyphicon-heart"></span> Support   </a>			&nbsp;&nbsp;&nbsp;
+						<a href="/logout/"><span class="glyphicon glyphicon-log-out"></span> Logout   </a>				  &nbsp;&nbsp;&nbsp;				
+					{% else %}
+						<a href="/support-donate/"> <span class="glyphicon glyphicon-heart"></span> Support   </a>			&nbsp;&nbsp; &nbsp;
+						<a href="/login/"><span class="glyphicon glyphicon-log-in"></span> Login  </a>				  &nbsp;&nbsp;&nbsp; 
+						<a href="/register/"><span class="glyphicon glyphicon-pencil"></span> Sign up </a>&nbsp;&nbsp;&nbsp;
+					{% endif %}
+				</h5>
 			</div>
-
 		</ul>
 	</div>
 
 </header>
 
+
 <body>
 
-    <div class="container-fluid" align="center" style="min-height:100%">
+    <div class="container-fluid" align="center" style="min-height:100%;">
     {% with messages = get_flashed_messages() %}
       {% if messages %}
         {% for message in messages %}
