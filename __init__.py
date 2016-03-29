@@ -13,7 +13,9 @@ import collections
 import base64
 import api
 
-import serial
+import smbus
+import time
+
 
 from dbconnect import connection
 import gc 
@@ -43,27 +45,12 @@ tasks = [
     }
 ]
 
-class user(object):
+	
+bus = smbus.SMBus(1)
+# This is the address we setup in the Arduino Program
+address = 0x04
 
-	def __init__(self,id,username,name,surname,telephone,email,authority,active):
-		self.username=username
-		self.name=name
-		self.surname=surname
-		self.id=id
-		self.telephone=telephone
-		self.email=email
-		self.authority=authority
-		self.active=active
-	
-	def get_id(self):
-		return self.id
-	
-	def get_username(self):
-		return self.username
 
-	def get_name(self):
-		return self.name
-	
 class RegistrationForm(Form):
 	username=TextField('Username',[validators.Length(min=4, max=20)])
 	email = TextField('Email Address',[validators.Length(min=6, max=50)])
@@ -357,28 +344,24 @@ def rest_activity():
 @app.route('/rest/servo120',methods=['GET'])
 def rest_servo120():
 	try:
-		ser = serial.Serial('/dev/ttyAMA0', 9600)
-		if ser.isOpen():
-			ser.write('120')
-		else:
-			ser.open()
-			ser.write('120')
-		return jsonify({'count': '40acıda'}), 201
+
+		bus.write_byte(address,120)
+		time.sleep(1)  
+		
+		return jsonify({'count': '40acida'}), 201
 	except Exception as e:
 		return(str(e))	
 
+	
+		
 @app.route('/rest/servo121',methods=['GET'])
 def rest_servo121():
 	try:
-		ser = serial.Serial('/dev/ttyAMA0', 9600)
-		if ser.isOpen():
-			ser.write('121')
-		else:
-			ser.open()
-			ser.write('121')
 
-		
-		return jsonify({'count': '130acıda'}), 201
+		bus.write_byte(address,121)
+		time.sleep(1)                    #delay one second
+
+		return jsonify({'count': '130acida'}), 201
 	except Exception as e:
 		return(str(e))		
 	
