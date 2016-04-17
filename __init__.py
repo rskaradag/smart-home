@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 from flask import Flask,render_template, jsonify, abort, request, make_response, url_for,flash, redirect,session
 from flask.ext.httpauth import HTTPBasicAuth
@@ -11,11 +10,9 @@ from functools import wraps
 from pwhash import *
 import collections
 import base64
-import api
-
-import smbus
+import serial
 import time
-
+from datetime import datetime
 
 from dbconnect import connection
 import gc 
@@ -28,29 +25,6 @@ auth = HTTPBasicAuth()
 #db=SQLAlchemy(app)
 
 
-#USER_LIST = content_users()
-
-tasks = [
-    {
-        'id': 1,
-        'title': u'Buy groceries',
-        'description': u'Milk, Cheese, Pizza, Fruit, Tylenol', 
-        'done': False
-    },
-    {
-        'id': 2,
-        'title': u'Learn Python',
-        'description': u'Need to find a good Python tutorial on the web', 
-        'done': False
-    }
-]
-
-	
-bus = smbus.SMBus(1)
-# This is the address we setup in the Arduino Program
-address = 0x04
-
-
 class RegistrationForm(Form):
 	username=TextField('Username',[validators.Length(min=4, max=20)])
 	email = TextField('Email Address',[validators.Length(min=6, max=50)])
@@ -58,22 +32,6 @@ class RegistrationForm(Form):
 										validators.EqualTo('confirm',message="Passwords must match")])
 	confirm = PasswordField('Repeat Password')
 	accept_tos=BooleanField('I accept the <a href="/tos/">Terms of Service</a> and the <a href="/privacy/">Privacy Notice</a> (Last updated Jan 15 2016',[validators.Required()])
-	
-def turkish_character(data):
-	data=data.replace("\u011f","ğ");
-	data=data.replace("\u00fc","ü");
-	data=data.replace("\u0131","ı");
-	data=data.replace("\u015f","ş");
-	data=data.replace("\u00e7","ç");
-	data=data.replace("\u00f6","ö");
-	data=data.replace("\u00dc","Ü");
-	data=data.replace("\u011e","Ğ");
-	data=data.replace("\u0130","İ");
-	data=data.replace("\u015e","Ş");
-	data=data.replace("\u00c7","Ç");
-	data=data.replace("\u00d6","Ö");
-	data=data.replace("}{","},{");
-	return data
 	
 def login_required(f):
 	@wraps(f)
@@ -84,15 +42,14 @@ def login_required(f):
 			flash("You need to login first")
 			return redirect(url_for('login_page'))
 	return wrap
-		
+
 @app.route("/logout/")
 @login_required
 def logout():
     session.clear()
     flash("You have been logged out!")
     gc.collect()
-    return redirect(url_for('dashboard'))
-	
+    return redirect(url_for('dashboard'))	
 	
 @app.route('/register/',methods=['GET','POST'])
 def register_page():
@@ -202,34 +159,8 @@ def login_page():
 @app.route('/dashboard/')
 @login_required
 def dashboard():
-  return render_template("dashboard.html", TOPIC_DICT = TOPIC_DICT)
+  return render_template("dashboard.html", TOPIC_DICT = TOPIC_DICT)  
   
-@app.route('/userlist/')
-@login_required
-def userlist():
-	error=''
-	try:
-		i=0
-		htmlresponse=''
-		values=[]
-		USER_LIST=[]
-		c, conn = connection()	
-		c.execute("SET NAMES utf8")
-		c.execute("SELECT uid,username,name,surname,telephone,email,authority,active FROM tb_users ")
-		rows = c.fetchall()
-		
-		for row in rows:
-			values.append(user(row[0],row[1],row[2],row[3],row[4],row[5],row[6],row[7]))
-			#htmlresponse=htmlresponse+'<tr><td>'+str(row[0])+'</td><td>'+str(row[1])+'</td></tr>'
-					
-		c.close()
-		conn.close()
-		return render_template("list.html",values=values) 	
-
-	except Exception as e:
-		flash(e)
-		return render_template("login.html",error=e)  
-
 @app.route('/slashboard/')
 @login_required
 def slashboard():
@@ -242,7 +173,7 @@ def slashboard():
 @login_required
 def index():
 	return "Hello "
-
+	
 @app.route('/tirrekanil',methods=['GET','POST'])
 @auth.login_required
 def tirrekanil():
@@ -265,7 +196,7 @@ def create_task():
 @app.route('/rest/login',methods=['GET','POST'])
 @auth.login_required
 def rest_login():
-	return "Hello, %s!" % auth.username()
+	return "Hello, %s!" % auth.username()	
 
 @app.route('/rest/users',methods=['GET','POST'])
 @auth.login_required
@@ -293,8 +224,6 @@ def rest_users():
 				
 			c.close()
 			conn.close()
-			
-			json_data=turkish_character(json_data)
 
 			return ('{"user":['+json_data+"]}")
 		else:
@@ -326,44 +255,122 @@ def rest_users():
 def rest_activity():
 	try:
 		deviceid=None
-		#c, conn = connection()
-		#c.execute("SELECT tb_users.name, tb_device.name, tb_activity.prevstatus, tb_activity.nextstatus FROM tb_users, tb_activity, tb_device WHERE tb_users.uid=tb_activity.changer_id and tb_device.id=tb_activity.device_id")
+		c, conn = connection()
+		#c.execute("SELECT tb_users.name, tb_device.name, tb_activity.prevstatus, tb_activity.nextstatus FROM tb_users, tb_activity, tb_device WHERE tb_users.uid=tb_activity.changer_id and tb_device.id=tb_activity.device_id")		
 		jsonData=json.loads(request.data)
 		for item in jsonData:
 			if str(item) == "count":				
 				count = str(jsonData[str(item)])
 			if "deviceid" in jsonData:
 				deviceid=str(jsonData["deviceid"])
-
-			#deviceid = item.get("deviceid")
-		
-		return jsonify({'count': count, 'deviceid':deviceid}), 201
+				
+		#c,conn = connection()
+			
+		#x = c.execute("SELECT * FROM tb_device WHERE id =(%d)",deviceid)		
+		#if int(x)<1:
+		#	abort(400)
+		#else:
+		ip=request.remote_addr
+			#c.execute("INSERT INTO tb_activity(user_id,device_id,prevstatus,currentstatus,date,IP,error) VALUES(%d,%d,)");
+			
+		return jsonify({'count': count, 'deviceid':deviceid,'ip':ip}), 201
 	except Exception as e:
 		return(str(e))
-	
-@app.route('/rest/servo120',methods=['GET'])
-def rest_servo120():
-	try:
-
-		bus.write_byte(address,120)
-		time.sleep(1)  
 		
-		return jsonify({'count': '40acida'}), 201
+@app.route('/rest/usbdeneme121',methods=['GET','POST'])
+@auth.login_required
+def rest_usbdeneme121():
+	try:
+		#c.execute("SELECT tb_users.name, tb_device.name, tb_activity.prevstatus, tb_activity.nextstatus FROM tb_users, tb_activity, tb_device WHERE tb_users.uid=tb_activity.changer_id and tb_device.id=tb_activity.device_id")		
+		jsonData=json.loads(request.data)
+		for item in jsonData:
+			if str(item) == "status":				
+				status = str(jsonData[str(item)])
+			if "deviceid" in jsonData:
+				device_id=str(jsonData["deviceid"])
+		c, conn = connection()		
+		device_id=int(device_id)
+		x = c.execute("""SELECT id,status FROM tb_device WHERE id =%d"""%(device_id))		
+		if int(x)<1:
+			abort(400)
+		else:
+			
+			prevstatus=c.fetchone()[1]
+			
+			c.execute("""SELECT uid FROM tb_users WHERE username =(%s)""",auth.username())	
+			user_id=c.fetchone()[0]
+					
+			ser = serial.Serial('/dev/ttyACM0',9600)
+			ser.writelines('121')
+			
+			
+			now = datetime.now()
+			now =now.strftime('%Y-%m-%d %H:%M:%S')	
+			
+			ip=request.remote_addr
+			err=0
+					
+			c.execute("""INSERT INTO tb_activity(user_id,device_id,prevstatus,currentstatus,date,IP,error) VALUES(%d,%d,'%s','%s','%s','%s',%d)"""%(user_id,device_id,prevstatus,status,now,ip,err))			
+			c.execute("""UPDATE tb_device SET status='%s' where id = %d"""%(status,int(device_id)))
+			
+			conn.commit()
+			
+			return jsonify({'user_id': user_id, 'deviceid':device_id,'ip':ip,'date':now,'status':status,'username':auth.username()}), 201
+		
+	except Exception as e:
+		return(str(e))
+		
+@app.route('/rest/usbdeneme120',methods=['GET','POST'])
+@auth.login_required
+def rest_usbdeneme120():
+	try:
+		#c.execute("SELECT tb_users.name, tb_device.name, tb_activity.prevstatus, tb_activity.nextstatus FROM tb_users, tb_activity, tb_device WHERE tb_users.uid=tb_activity.changer_id and tb_device.id=tb_activity.device_id")		
+		jsonData=json.loads(request.data)
+		for item in jsonData:
+			if str(item) == "status":				
+				status = str(jsonData[str(item)])
+			if "deviceid" in jsonData:
+				device_id=str(jsonData["deviceid"])
+		c, conn = connection()		
+		device_id=int(device_id)
+		x = c.execute("""SELECT id,status FROM tb_device WHERE id =%d"""%(device_id))	
+		if int(x)<1:
+			abort(400)
+		else:
+			
+			prevstatus=c.fetchone()[1]
+			
+			c.execute("""SELECT uid FROM tb_users WHERE username =(%s)""",auth.username())	
+			user_id=c.fetchone()[0]
+			
+			
+			ser = serial.Serial('/dev/ttyACM0',9600)	
+			
+			ser.writelines('120')
+			
+			now = datetime.now()
+			now =now.strftime('%Y-%m-%d %H:%M:%S')	
+			
+			ip=request.remote_addr
+			err=0		
+			
+			c.execute("""INSERT INTO tb_activity(user_id,device_id,prevstatus,currentstatus,date,IP,error) VALUES(%d,%d,'%s','%s','%s','%s',%d)"""%(user_id,device_id,prevstatus,status,now,ip,err))
+			c.execute("""UPDATE tb_device SET status='%s' where id = %d"""%(status,int(device_id)))
+			
+			conn.commit()
+			
+			return jsonify({'user_id': user_id, 'deviceid':device_id,'ip':ip,'date':now,'status':status,'username':auth.username()}), 201
+		
+	except Exception as e:
+		return(str(e))
+
+@app.route('/rest/anil',methods=['GET','POST'])
+@auth.login_required
+def rest_anil():
+	try:
+		return jsonify({'temp': 23,'humi':40,'servo':120}), 201
 	except Exception as e:
 		return(str(e))	
-
-	
 		
-@app.route('/rest/servo121',methods=['GET'])
-def rest_servo121():
-	try:
-
-		bus.write_byte(address,121)
-		time.sleep(1)                    #delay one second
-
-		return jsonify({'count': '130acida'}), 201
-	except Exception as e:
-		return(str(e))		
-	
-if __name__ == '__main__':
-	app.run(debug=True)
+if __name__ == "__main__":
+    app.run(debug=True)
