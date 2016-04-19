@@ -2,17 +2,19 @@
 
 {% block body %}
 
-<body>
+
 
 	<div class="container">
-		<h4>Register</h4>
-		<br>
 		{% from "_formhelpers.html" import render_field %}
 		<form method=post action="/register/">
 		
 			<dl>
 				{{ render_field(form.username) }}
+				{{ render_field(form.name) }}
+				{{ render_field(form.surname) }}
 				{{ render_field(form.email) }}
+				{{ render_field(form.telephone) }}
+				{{ render_field(form.doorkey) }}
 				{{ render_field(form.password) }}
 				{{ render_field(form.confirm) }}
 				{{ render_field(form.accept_tos) }}
@@ -26,6 +28,5 @@
 		
 	</div>
 
-</body>
 
 {% endblock %}

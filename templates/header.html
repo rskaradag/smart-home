@@ -1,16 +1,53 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-	<meta charset="utf-16">
+	<meta lang="utf-16">
 	<title>Smart Home System</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
-	<link rel="shortcut icon" href="{{ url_for('static', filename='house.ico') }}">
+	
+	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.11/css/jquery.dataTables.min.css">
 
+	<!– <script type="text/javascript" src="https://datatables.net/media/js/site.js?_=1d77a229585e4e41d9224d51ea376cc6">
+	<!–</script>
+	
+	<script type="text/javascript" language="javascript" src="//code.jquery.com/jquery-1.12.0.min.js">
+	</script>
+	<script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.10.11/js/jquery.dataTables.min.js">
+	</script>
+	
+	<style type="text/css">
+		#devicecontainer{
+			background-color:#DFDFDF;
+			width:75%;
+			
+			padding: 10px 10px 10px 10px;
+		}
+		#activitycontainer{
+			background-color:#DFDFDF;
+			width:80%;
+			
+			padding: 10px 10px 10px 10px;
+		}
+		#userlistcontainer{
+			background-color:#DFDFDF;
+			width:80%;
+			
+			padding: 10px 10px 10px 10px;
+		}
+	</style>
+	
+		<script type="text/javascript" class="init">
+			
+		$(document).ready(function() {
+			$('#example').DataTable();
+		} );
+
+		</script>
 
 </head>
-
-<header style="max-width:800px" align="center">
+<body style="background-color:#D3D3D3; ">
+<header align="center">
 	
 	
 	
@@ -18,24 +55,23 @@
 	
 		<div class="navbar-header">
 			<a class="navbar-brand" href="/">
-			<img style="max-width:50px; margin-top: -7px;" src="{{ url_for('static', filename='images/mainlogo.png') }}">
+			<img style="max-height:35px; margin-top: -7px;" src="{{ url_for('static', filename='images/logo.png') }}">
 			</a>
-			<a href="/dashboard/"><button type="button" class="btn btn-primary" aria-label="Left Align" style="margin-top: 5px; margin-bottom: 5px; height: 44px; margin-right: 15px">
-			<span class="glyphicon glyphicon-off" aria-hidden="true"></span> Go to anywhere
-			</button></a>
 		</div>
 		
 		<ul class="nav navbar-nav navbar-right">		  
 			<div style="margin-right: 10px; margin-left: 15px; margin-top: 5px; margin-bottom: 5px;"  class="container-fluid">
 				<h5>
 					
-					{% if session.logged_in %}					
-						<a href="/support-donate/"> <span class="glyphicon glyphicon-heart"></span> Support   </a>			&nbsp;&nbsp;&nbsp;
-						<a href="/logout/"><span class="glyphicon glyphicon-log-out"></span> Logout   </a>				  &nbsp;&nbsp;&nbsp;				
+					{% if session.logged_in %}
+						<a href="/devices/"><span class="glyphicon glyphicon-cog" style="color:#232D48"></span> <span style="color:#232D48" >Devices</span>   </a>				  &nbsp;&nbsp;&nbsp;	
+						<a href="/userlist/"><span class="glyphicon glyphicon-user" style="color:#232D48"></span> <span style="color:#232D48" >UserList   </span></a>				  &nbsp;&nbsp;&nbsp;					
+						<a href="/activity/"><span class="glyphicon glyphicon-list-alt" style="color:#232D48"></span> <span style="color:#232D48" >Activity  </span> </a>				  &nbsp;&nbsp;&nbsp;	
+						<a href="/register/"><span class="glyphicon glyphicon-plus" style="color:#232D48"></span> <span style="color:#232D48" >Register </span></a>&nbsp;&nbsp;&nbsp;	
+						<a href="/logout/"><span class="glyphicon glyphicon-log-out" style="color:#232D48"></span> <span style="color:#232D48" >Logout  </span> </a>				  &nbsp;&nbsp;&nbsp;						
 					{% else %}
-						<a href="/support-donate/"> <span class="glyphicon glyphicon-heart"></span> Support   </a>			&nbsp;&nbsp; &nbsp;
-						<a href="/login/"><span class="glyphicon glyphicon-log-in"></span> Login  </a>				  &nbsp;&nbsp;&nbsp; 
-						<a href="/register/"><span class="glyphicon glyphicon-pencil"></span> Sign up </a>&nbsp;&nbsp;&nbsp;
+						<a href="/login/"><span class="glyphicon glyphicon-log-in" style="color:#232D48"></span> <span style="color:#232D48" >Login  </span></a>				  &nbsp;&nbsp;&nbsp; 
+
 					{% endif %}
 				</h5>
 			</div>
@@ -45,7 +81,7 @@
 </header>
 
 
-<body>
+
 
     <div class="container-fluid" align="center" style="min-height:100%;">
     {% with messages = get_flashed_messages() %}
@@ -65,8 +101,6 @@
     </div>
 
 
-	<script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
-	<script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
 
 </body>
 

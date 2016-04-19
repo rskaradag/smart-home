@@ -3,44 +3,39 @@
 {% block body %}
 
 		<div class="container">
-
-			<table id="example" class="display" cellspacing="0" width="100%">
-				<thead>
-					<tr>
-						<th>ID</th>
-						<th>Username</th>
-						<th>Name</th>
-						<th>Surname</th>
-						<th>Email</th>
-						<th>Telephone</th>
-						<th>Authority</th>
-						<th>Active</th>
-					</tr>
-				</thead>
-				<tbody>
-	
-					{% for t in values %}
-					<tr>
-						<td>{{t.get_id()}}</td>
-						<td>{{t.get_username()}}</td>
-						<td>{{t.get_name()}}</td>
-					</tr>
-					{% endfor %}
-						
-	
-				</tbody>
-			</table>
-				
+			<div id="userlistcontainer">
+				<table id="example" class="table table-striped table-bordered" cellspacing="0" width="100%">
+					<thead>
+						<tr>
+							<th>ID</th>
+							<th>Username</th>
+							<th>Name</th>
+							<th>Surname</th>
+							<th>Email</th>
+							<th>Telephone</th>
+							<th>Authority</th>
+							<th>Active</th>
+						</tr>
+					</thead>
+					<tbody>
+		
+						{% for t in USER_LIST %}
+						<tr>
+							<td>{{t["ID"]}}</td>
+							<td>{{t["username"]}}</td>
+							<td>{{t["name"]}}</td>
+							<td>{{t["surname"]}}</td>
+							<td>{{t["email"]}}</td>
+							<td>{{t["telephone"]}}</td>
+							<td>{{t["authority"]}}</td>
+							<td>{{t["active"]}}</td>
+						</tr>
+						{% endfor %}
+							
+		
+					</tbody>
+				</table>
+			</div>	
 		</div>
-		<script type="text/javascript" charset="utf-8">
-			$(document).ready(function() {
-				$('#example').DataTable();
-			} );
-		</script>
-		<script type="text/javascript">
-			// For demo to fit into DataTables site builder...
-			$('#example')
-				.removeClass( 'display' )
-				.addClass('table table-striped table-bordered');
-		</script>
+
 {% endblock %}

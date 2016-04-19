@@ -1,0 +1,47 @@
+{% extends 'header.html' %}
+
+{% block body %}
+
+		<div class="container">
+			<div id="devicecontainer">
+				<table id="example" class="display" cellspacing="0" width="100%">
+					<thead>
+						<tr>
+							<th>#</th>
+							<th>Name</th>
+							<th>Location</th>
+							<th>Status</th>
+							<th>Active</th>
+							<th>Switch</th>
+						</tr>
+					</thead>
+					<tbody>
+		
+		
+						{% for t in DEVICE_LIST %}
+						<tr>
+							<td>{{t["ID"]}}</td>
+							<td>{{t["name"]}}</td>
+							<td>{{t["location"]}}</td>
+							<td>{{t["status"]}}</td>
+							<td>{{t["active"]}}</td>
+							<td>
+							
+							{% if t["status"]=="On" %}
+								<a href="#"><img src="{{ url_for('static', filename='images/on.png') }}" height="16px"></a>
+							{% endif %}
+							{% if t["status"]=="Off" %}
+								<a href="#"><img src="{{ url_for('static', filename='images/off.png') }}" height="16px"></a>
+							{% endif %}
+							
+							</td>
+						</tr>
+						{% endfor %}
+							
+		
+					</tbody>
+				</table>		
+			</div>
+		</div>
+		
+{% endblock %}

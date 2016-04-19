@@ -1,0 +1,45 @@
+{% extends 'header.html' %}
+
+{% block body %}
+
+		<div class="container">
+			<div id="activitycontainer">
+				<table id="example" class="display" cellspacing="0" width="100%">
+					<thead>
+						<tr text-align="left">
+							<th>User</th>
+							<th>Device</th>
+							<th>Previous Status</th>
+							<th>Current Status</th>
+							<th>IP</th>
+							<th>DATE-TIME</th>
+							<th>Error</th>
+						</tr>
+					</thead>
+					<tbody>
+		
+						{% for t in ACTIVITY_LIST %}
+						<tr>
+							<td>{{t["Username"]}}</td>
+							<td>{{t["Device"]}}</td>
+							<td>{{t["Prevstatus"]}}</td>
+							<td>{{t["Currentstatus"]}}</td>
+							<td>{{t["IP"]}}</td>
+							<td>{{t["DATE-TIME"]}}</td>
+							<td>
+							{% if t["Error"]=="0" %}
+								<img src="{{ url_for('static', filename='images/ok.png') }}" height="15px">
+							{% endif %}
+							{% if t["Error"]=="1" %}
+								<img src="{{ url_for('static', filename='images/not.png') }}" height="15px">
+							{% endif %}
+							
+							</td>
+						</tr>
+						{% endfor %}					
+					</tbody>
+				</table>		
+			<div id="devicecontainer">
+		</div>
+		
+{% endblock %}
