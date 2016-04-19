@@ -27,7 +27,11 @@ auth = HTTPBasicAuth()
 
 class RegistrationForm(Form):
 	username=TextField('Username',[validators.Length(min=4, max=20)])
+	name=TextField('Name',[validators.Length(min=4, max=20)])
+	surname=TextField('Surname',[validators.Length(min=4, max=20)])
 	email = TextField('Email Address',[validators.Length(min=6, max=50)])
+	telephone = TextField('Telephone ',[validators.Length(min=10, max=11)])
+	doorkey = TextField('Door Key ',[validators.Length(min=4, max=4)])
 	password = PasswordField('Password',[validators.Required(),
 										validators.EqualTo('confirm',message="Passwords must match")])
 	confirm = PasswordField('Repeat Password')
@@ -52,6 +56,7 @@ def logout():
     return redirect(url_for('dashboard'))	
 	
 @app.route('/register/',methods=['GET','POST'])
+@login_required
 def register_page():
 	try:		
 		form = RegistrationForm(request.form)
@@ -59,6 +64,10 @@ def register_page():
 		if request.method == "POST" and form.validate():
 			username =form.username.data
 			email = form.email.data
+			name = form.name.data
+			surname = form.surname.data
+			telephone = form.telephone.data
+			doorkey = form.doorkey.data
 			password = sha256_crypt.encrypt((str(form.password.data)))
 			
 			c,conn = connection()
@@ -69,8 +78,8 @@ def register_page():
 				flash("That email is already taken, please choose another")
 				return render_template('register.html',form=form)
 			else:
-				c.execute("INSERT INTO tb_users (username,password,email) VALUES (%s,%s,%s)",
-							(thwart(username),thwart(password),thwart(email)))
+				c.execute("INSERT INTO tb_users (username,name,surname,telephone,doorkey,password,email) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+							(thwart(username),thwart(name),thwart(surname),thwart(telephone),thwart(doorkey),thwart(password),thwart(email)))
 				conn.commit()
 				flash("Thanks for registering ! ")
 				c.close()
@@ -79,6 +88,7 @@ def register_page():
 				session['logged_in']= True				
 				session['username'] = username				
 				return redirect(url_for('dashboard'))
+				
 		return render_template("register.html",form=form)
 			
 			
@@ -87,11 +97,11 @@ def register_page():
 			
 @app.errorhandler(404)
 def not_found(e):
-  return render_template("404.html")
+	return render_template("404.html")
   
 @app.errorhandler(405)
 def method_not_found(e):
-  return render_template("405.html")
+	return render_template("405.html")
 
 def rest_login_user(username,password):	
 	if username != "" and password != "":	
@@ -123,51 +133,151 @@ def verify_password(username, password):
 	
 @app.route('/')
 def homepage():
-  return render_template("header.html")
+	if session['logged_in']== False:		
+		return render_template("login.html")
+	else:
+		return redirect(url_for("userlist"))
+  
+@app.route('/userlist/')
+@login_required
+def userlist():
+	error=''
+	i=0
+	try:
+		data={}
+		USER_LIST=[]
+			
+		c, conn = connection()	
+		c.execute("SELECT uid,username,name,surname,email,telephone,authority,active FROM tb_users ")
+		rows = c.fetchall()
+		
+		for row in rows:			
+			data["ID"]=row[0]
+			data["username"]=row[1]
+			data["name"]=row[2]
+			data["surname"]=row[3]
+			data["email"]=row[4]
+			data["telephone"]=row[5]
+			data["authority"]=row[6]
+			data["active"]=row[7]
+							
+			USER_LIST.insert(i,data)
+			data={}
+			i=i+1
+			
+		c.close()
+		conn.close()
+		return render_template("list.html",USER_LIST=USER_LIST) 	
 
+	except Exception as e:
+		flash(e)
+		
+@app.route('/devices/')
+@login_required
+def devices():
+	try:
+		i=0
+		data={}
+		DEVICE_LIST=[]
+		c, conn = connection()
+		c.execute("SELECT * FROM tb_device ")
+		rows = c.fetchall()
+		for row in rows:			
+			data["ID"]=row[0]
+			data["name"]=row[1]
+			data["location"]=row[2]
+			data["status"]=row[3]
+			data["active"]=row[4]
+							
+			DEVICE_LIST.insert(i,data)
+			data={}
+			i=i+1
+			
+		c.close()
+		conn.close()
+		
+		return render_template("device.html",DEVICE_LIST=DEVICE_LIST) 
+		
+	except Exception as e:
+		return str(e)
+
+
+@app.route('/activity/')
+@login_required
+def activity():
+	error=''
+	i=0
+	try:
+		data={}
+		values=[]
+		ACTIVITY_LIST=[]
+			
+		c, conn = connection()	
+		c.execute("SELECT tb_users.username, tb_device.name, tb_activity.prevstatus, tb_activity.currentstatus,tb_activity.IP,tb_activity.DATE,tb_activity.error FROM tb_users, tb_activity, tb_device WHERE tb_users.uid=tb_activity.user_id and tb_device.id=tb_activity.device_id ")
+		rows = c.fetchall()
+		
+		for row in rows:			
+			data["Username"]=row[0]
+			data["Device"]=row[1]
+			data["Prevstatus"]=row[2]
+			data["Currentstatus"]=row[3]
+			data["IP"]=row[4]
+			data["DATE-TIME"]=row[5]
+			data["Error"]=row[6]
+							
+			ACTIVITY_LIST.insert(i,data)
+			data={}
+			i=i+1
+			
+		c.close()
+		conn.close()
+		return render_template("activity.html",ACTIVITY_LIST=ACTIVITY_LIST) 	
+
+	except Exception as e:
+		flash(e)
 @app.route('/login/', methods=['GET','POST'])
 def login_page():
-    error = ''
-    try:
-        c, conn = connection()
-        if request.method == "POST":
+	error = ''
+	try:
+		c, conn = connection()
+		if request.method == "POST":
 						
-            data = c.execute("SELECT username, password FROM tb_users WHERE username = (%s)", thwart(request.form['username']))
+			data = c.execute("SELECT username, password FROM tb_users WHERE username = (%s)", thwart(request.form['username']))
             
-            data = c.fetchone()[1]
+			data = c.fetchone()[1]
 
-            if sha256_crypt.verify(request.form['password'], data):
-                session['logged_in'] = True
-                session['username'] = request.form['username']
+			if sha256_crypt.verify(request.form['password'], data):
+				session['logged_in'] = True
+				session['username'] = request.form['username']
 
-                flash("You are now logged in")
-                return redirect(url_for("userlist"))
+				flash("You are now logged in")
+				return redirect(url_for("userlist"))
+				
+			else:
+				error = "Invalid credentials, try again 1."
 
-            else:
-                error = "Invalid credentials, try again 1."
+		gc.collect()
 
-        gc.collect()
+		return render_template("login.html", error=error)
 
-        return render_template("login.html", error=error)
-
-    except Exception as e:
-        flash(e)
-        error = "Invalid credentials, try again."
-        return render_template("login.html", error = error)  
+	except Exception as e:
+		flash(e)
+		error = "Invalid credentials, try again."
+		return render_template("login.html", error = error)  
 		
 		
 @app.route('/dashboard/')
 @login_required
 def dashboard():
-  return render_template("dashboard.html", TOPIC_DICT = TOPIC_DICT)  
+	return render_template("dashboard.html", TOPIC_DICT = TOPIC_DICT)  
   
 @app.route('/slashboard/')
 @login_required
 def slashboard():
-  try:
-    return render_template("slahsboard.html", TOPIC_DICT = TOPIC_DICT) 
-  except Exception as e:
-    return render_template("500.html",error=e)
+	try:
+		return render_template("slahsboard.html", TOPIC_DICT = TOPIC_DICT) 
+	except Exception as e:
+		return render_template("500.html",error=e)
   
 @app.route('/home',methods=['GET','POST'])
 @login_required
@@ -208,7 +318,6 @@ def rest_users():
 		json_data=""
 		c, conn = connection()
 		if request.method=="GET":				
-			c.execute("SET NAMES utf8")
 			c.execute("SELECT uid,username,name,surname,telephone,email,authority FROM tb_users ")
 			rows = c.fetchall()
 			
@@ -275,94 +384,56 @@ def rest_activity():
 			
 		return jsonify({'count': count, 'deviceid':deviceid,'ip':ip}), 201
 	except Exception as e:
-		return(str(e))
-		
-@app.route('/rest/usbdeneme121',methods=['GET','POST'])
+		return(str(e))	
+
+@app.route('/rest/switch',methods=['GET','POST'])
 @auth.login_required
-def rest_usbdeneme121():
+def rest_switch():
 	try:
 		#c.execute("SELECT tb_users.name, tb_device.name, tb_activity.prevstatus, tb_activity.nextstatus FROM tb_users, tb_activity, tb_device WHERE tb_users.uid=tb_activity.changer_id and tb_device.id=tb_activity.device_id")		
 		jsonData=json.loads(request.data)
-		for item in jsonData:
-			if str(item) == "status":				
-				status = str(jsonData[str(item)])
-			if "deviceid" in jsonData:
-				device_id=str(jsonData["deviceid"])
-		c, conn = connection()		
-		device_id=int(device_id)
-		x = c.execute("""SELECT id,status FROM tb_device WHERE id =%d"""%(device_id))		
-		if int(x)<1:
-			abort(400)
-		else:
-			
-			prevstatus=c.fetchone()[1]
-			
-			c.execute("""SELECT uid FROM tb_users WHERE username =(%s)""",auth.username())	
-			user_id=c.fetchone()[0]
-					
-			ser = serial.Serial('/dev/ttyACM0',9600)
-			ser.writelines('121')
-			
-			
-			now = datetime.now()
-			now =now.strftime('%Y-%m-%d %H:%M:%S')	
-			
-			ip=request.remote_addr
-			err=0
-					
-			c.execute("""INSERT INTO tb_activity(user_id,device_id,prevstatus,currentstatus,date,IP,error) VALUES(%d,%d,'%s','%s','%s','%s',%d)"""%(user_id,device_id,prevstatus,status,now,ip,err))			
-			c.execute("""UPDATE tb_device SET status='%s' where id = %d"""%(status,int(device_id)))
-			
-			conn.commit()
-			
-			return jsonify({'user_id': user_id, 'deviceid':device_id,'ip':ip,'date':now,'status':status,'username':auth.username()}), 201
+		try:
+			for item in jsonData:
+				if str(item) == "status":				
+					status = str(jsonData[str(item)])
+				if "deviceid" in jsonData:
+					device_id=str(jsonData["deviceid"])		
+		except:
+			return abort(400)
 		
-	except Exception as e:
-		return(str(e))
-		
-@app.route('/rest/usbdeneme120',methods=['GET','POST'])
-@auth.login_required
-def rest_usbdeneme120():
-	try:
-		#c.execute("SELECT tb_users.name, tb_device.name, tb_activity.prevstatus, tb_activity.nextstatus FROM tb_users, tb_activity, tb_device WHERE tb_users.uid=tb_activity.changer_id and tb_device.id=tb_activity.device_id")		
-		jsonData=json.loads(request.data)
-		for item in jsonData:
-			if str(item) == "status":				
-				status = str(jsonData[str(item)])
-			if "deviceid" in jsonData:
-				device_id=str(jsonData["deviceid"])
 		c, conn = connection()		
 		device_id=int(device_id)
 		x = c.execute("""SELECT id,status FROM tb_device WHERE id =%d"""%(device_id))	
-		if int(x)<1:
+		if (int(x)<1) or (status!="On" and status!="Off"):
 			abort(400)
 		else:
 			
-			prevstatus=c.fetchone()[1]
-			
-			c.execute("""SELECT uid FROM tb_users WHERE username =(%s)""",auth.username())	
-			user_id=c.fetchone()[0]
-			
-			
-			ser = serial.Serial('/dev/ttyACM0',9600)	
-			
-			ser.writelines('120')
-			
-			now = datetime.now()
-			now =now.strftime('%Y-%m-%d %H:%M:%S')	
-			
-			ip=request.remote_addr
-			err=0		
-			
-			c.execute("""INSERT INTO tb_activity(user_id,device_id,prevstatus,currentstatus,date,IP,error) VALUES(%d,%d,'%s','%s','%s','%s',%d)"""%(user_id,device_id,prevstatus,status,now,ip,err))
-			c.execute("""UPDATE tb_device SET status='%s' where id = %d"""%(status,int(device_id)))
-			
-			conn.commit()
-			
-			return jsonify({'user_id': user_id, 'deviceid':device_id,'ip':ip,'date':now,'status':status,'username':auth.username()}), 201
+			db_status=c.fetchone()[1]
+			if db_status == status:
+				abort(400)
+			else:
+				c.execute("""SELECT uid FROM tb_users WHERE username =(%s)""",auth.username())	
+				user_id=c.fetchone()[0]
+						
+				#ser = serial.Serial('/dev/ttyACM0',9600)
+				#ser.writelines('121')
+							
+				now = datetime.now()
+				now =now.strftime('%Y-%m-%d %H:%M:%S')	
+				
+				ip=request.remote_addr
+				err=0
+						
+				c.execute("""INSERT INTO tb_activity(user_id,device_id,prevstatus,currentstatus,date,IP,error) VALUES(%d,%d,'%s','%s','%s','%s',%d)"""%(user_id,device_id,db_status,status,now,ip,err))			
+				c.execute("""UPDATE tb_device SET status='%s' where id = %d"""%(status,int(device_id)))
+				
+				conn.commit()
+				
+				return jsonify({'user_id': user_id, 'deviceid':device_id,'ip':ip,'date':now,'status':status,'username':auth.username()}), 201
 		
 	except Exception as e:
 		return(str(e))
+	
 
 @app.route('/rest/anil',methods=['GET','POST'])
 @auth.login_required
