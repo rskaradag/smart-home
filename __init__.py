@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from flask import Flask,render_template, jsonify, abort, request, make_response, url_for,flash, redirect,session
 from flask.ext.httpauth import HTTPBasicAuth
+#from celery import Celery
+import pylcdlib #i2c lib
 import json
 from content_management import *
 from wtforms import Form, BooleanField, TextField, PasswordField, validators
@@ -17,12 +19,26 @@ from datetime import datetime
 from dbconnect import connection
 import gc 
 
-TOPIC_DICT = Content()
 
 app = Flask(__name__)
+
+
+TOPIC_DICT = Content()
+
+
+
+
 #app.config.from_pyfile('config.py')
+#app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+#app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+
 auth = HTTPBasicAuth()
-#db=SQLAlchemy(app)
+
+
+#celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+#celery.conf.update(app.config)
+
+lcd = pylcdlib.lcd(0x3F,1)
 
 
 class RegistrationForm(Form):
@@ -35,8 +51,8 @@ class RegistrationForm(Form):
 	password = PasswordField('Password',[validators.Required(),
 										validators.EqualTo('confirm',message="Passwords must match")])
 	confirm = PasswordField('Repeat Password')
-	accept_tos=BooleanField('I accept the <a href="/tos/">Terms of Service</a> and the <a href="/privacy/">Privacy Notice</a> (Last updated Jan 15 2016',[validators.Required()])
 	
+
 def login_required(f):
 	@wraps(f)
 	def wrap(*args, **kwargs):
@@ -133,11 +149,13 @@ def verify_password(username, password):
 	
 @app.route('/')
 def homepage():
-	if session['logged_in']== False:		
+	try:	
+		if session['logged_in']== True:		
+			return redirect(url_for("userlist"))
+		else:
+			return render_template("login.html")
+	except:
 		return render_template("login.html")
-	else:
-		return redirect(url_for("userlist"))
-  
 @app.route('/userlist/')
 @login_required
 def userlist():
@@ -213,7 +231,7 @@ def activity():
 		ACTIVITY_LIST=[]
 			
 		c, conn = connection()	
-		c.execute("SELECT tb_users.username, tb_device.name, tb_activity.prevstatus, tb_activity.currentstatus,tb_activity.IP,tb_activity.DATE,tb_activity.error FROM tb_users, tb_activity, tb_device WHERE tb_users.uid=tb_activity.user_id and tb_device.id=tb_activity.device_id ")
+		c.execute("SELECT tb_users.username, tb_device.name, tb_activity.prevstatus, tb_activity.currentstatus,tb_activity.IP,tb_activity.DATE,tb_activity.error,tb_activity.report FROM tb_users, tb_activity, tb_device WHERE tb_users.uid=tb_activity.user_id and tb_device.id=tb_activity.device_id ")
 		rows = c.fetchall()
 		
 		for row in rows:			
@@ -224,6 +242,7 @@ def activity():
 			data["IP"]=row[4]
 			data["DATE-TIME"]=row[5]
 			data["Error"]=row[6]
+			data["Report"]=row[7]
 							
 			ACTIVITY_LIST.insert(i,data)
 			data={}
@@ -284,25 +303,6 @@ def slashboard():
 def index():
 	return "Hello "
 	
-@app.route('/tirrekanil',methods=['GET','POST'])
-@auth.login_required
-def tirrekanil():
-	return jsonify({'tasks': tasks})
-	
-@app.route('/tirrekanil/add', methods=['POST'])
-@auth.login_required
-def create_task():
-    if not request.json or not 'title' in request.json:
-        abort(400)
-    task = {
-        'id': tasks[-1]['id'] + 1,
-        'title': request.json['title'],
-        'description': request.json.get('description', ""),
-        'done': False
-    }
-    tasks.append(task)
-    return jsonify({'task': task}), 201
-	
 @app.route('/rest/login',methods=['GET','POST'])
 @auth.login_required
 def rest_login():
@@ -316,46 +316,25 @@ def rest_users():
 		data={}
 
 		json_data=""
-		c, conn = connection()
-		if request.method=="GET":				
-			c.execute("SELECT uid,username,name,surname,telephone,email,authority FROM tb_users ")
-			rows = c.fetchall()
+		c, conn = connection()			
+		c.execute("SELECT uid,username,name,surname,telephone,email,authority FROM tb_users ")
+		rows = c.fetchall()
 			
-			for item in rows:
-				data['ID']=item[0]
-				data['name']=item[2]
-				data['surname']=item[3]
-				data['telephone']=item[4]
-				data['email']=item[5]
-				data['authority']=item[6]
+		for item in rows:
+			data['ID']=item[0]
+			data['name']=item[2]
+			data['surname']=item[3]
+			data['telephone']=item[4]
+			data['email']=item[5]
+			data['authority']=item[6]
 
-				json_data=json_data + json.dumps(data)
+			json_data=json_data + json.dumps(data)
 				
-			c.close()
-			conn.close()
+		c.close()
+		conn.close()
 
-			return ('{"user":['+json_data+"]}")
-		else:
-			if not request.json or not 'ID' in request.json:
-				abort(400)
-			else: 
-				c.execute("SELECT uid,username,name,surname,telephone,email,authority FROM tb_users WHERE uid=(%s)",str(request.json['ID']))
-				rows = c.fetchall()
-			
-				for row in rows:
-					temp["ID"]=row[0]
-					temp["username"]=row[1]
-					temp["name"]=row[2]
-					temp["surname"]=row[3]
-					temp["telephone"]=row[4]
-					temp["email"]=row[5]
-					temp["authority"]=row[6]
-					listusers.append(temp)
-					temp={}
-				c.close()
-				conn.close()
-				return jsonify({'user': listusers}), 201
-			
+		return ('{"user":['+json_data+"]}")
+
 	except Exception as e:
 		return(str(e))
 	
@@ -386,7 +365,7 @@ def rest_activity():
 	except Exception as e:
 		return(str(e))	
 
-@app.route('/rest/switch',methods=['GET','POST'])
+@app.route('/rest/switch',methods=['POST'])
 @auth.login_required
 def rest_switch():
 	try:
@@ -413,33 +392,120 @@ def rest_switch():
 				abort(400)
 			else:
 				c.execute("""SELECT uid FROM tb_users WHERE username =(%s)""",auth.username())	
-				user_id=c.fetchone()[0]
-						
-				#ser = serial.Serial('/dev/ttyACM0',9600)
-				#ser.writelines('121')
-							
-				now = datetime.now()
-				now =now.strftime('%Y-%m-%d %H:%M:%S')	
-				
-				ip=request.remote_addr
-				err=0
-						
-				c.execute("""INSERT INTO tb_activity(user_id,device_id,prevstatus,currentstatus,date,IP,error) VALUES(%d,%d,'%s','%s','%s','%s',%d)"""%(user_id,device_id,db_status,status,now,ip,err))			
-				c.execute("""UPDATE tb_device SET status='%s' where id = %d"""%(status,int(device_id)))
-				
-				conn.commit()
-				
-				return jsonify({'user_id': user_id, 'deviceid':device_id,'ip':ip,'date':now,'status':status,'username':auth.username()}), 201
-		
+				user_id=c.fetchone()[0]	
+				try:
+					now = datetime.now()
+					now =now.strftime('%Y-%m-%d %H:%M:%S')						
+					ip=request.remote_addr
+					err=0
+					
+					serial_data = '120**' if status == "On" else '121**'					
+					ser = serial.Serial('/dev/ttyACM0',9600)
+					ser.writelines(serial_data)
+											
+					report="Passed"		
+					c.execute("""INSERT INTO tb_activity(user_id,device_id,prevstatus,currentstatus,date,IP,error,report) VALUES(%d,%d,'%s','%s','%s','%s',%d,'%s')"""%(user_id,device_id,db_status,status,now,ip,err,report))			
+					c.execute("""UPDATE tb_device SET status='%s' where id = %d"""%(status,int(device_id)))
+					
+					conn.commit()
+					ser.flush()
+					return jsonify({'user_id': user_id, 'deviceid':device_id,'ip':ip,'date':now,'status':status,'username':auth.username()}), 201
+				except Exception as e:
+					report=str(e)
+					report=report.replace("'","")
+					c.execute("""INSERT INTO tb_activity(user_id,device_id,prevstatus,currentstatus,date,IP,error,report) VALUES(%d,%d,'%s','%s','%s','%s',%d,'%s')"""%(user_id,device_id,db_status,db_status,now,ip,1,report))			
+					conn.commit()
+					abort(501)
 	except Exception as e:
 		return(str(e))
-	
 
-@app.route('/rest/anil',methods=['GET','POST'])
+@app.route('/rest/status',methods=['GET','POST'])
 @auth.login_required
-def rest_anil():
+def rest_status():
 	try:
-		return jsonify({'temp': 23,'humi':40,'servo':120}), 201
+	#curl -u slck:slck123 -i -H "Content-Type:application/json" -X POST -d '{"ID":"5"}' 192.168.1.33/rest/status
+		response={}
+		data={}
+		i=0
+		json_data=""
+		c, conn = connection()
+		if request.method=="GET":				
+			c.execute("SELECT * FROM tb_device ")
+			rows = c.fetchall()
+			
+			for item in rows:
+				data['ID']=item[0]
+				data['name']=item[1]
+				data['location']=item[2]
+				data['status']=item[3]
+				data['active']=item[4]
+				
+				response[int(item[0])]=data
+				data={}
+			c.close()
+			conn.close()
+
+			return jsonify({'device':response}), 201
+		else:
+			if not request.json or not 'deviceid' in request.json:
+				abort(400)
+			else: 
+				deviceid=request.json["deviceid"]
+				c.execute("SELECT * FROM tb_device WHERE id=(%d)"%int(deviceid))
+				rows = c.fetchall()
+			
+				for item in rows:
+					data['ID']=item[0]
+					data['name']=item[1]
+					data['location']=item[2]
+					data['status']=item[3]
+					data['active']=item[4]
+					
+				c.close()
+				conn.close()
+				return jsonify({'device':data}), 201
+			
+	except Exception as e:
+		return(str(e))
+		
+@app.route('/rest/test',methods=['GET'])
+@auth.login_required
+def rest_test():
+	try:
+		
+		ser = serial.Serial('/dev/ttyACM0',9600)
+
+		ser.writelines('*****')
+		time.sleep(1)
+		x=ser.readline()
+		ser.flush()
+		
+		return jsonify({'temperature':str(x)}), 201
+	except Exception as e:
+		return(str(e))	
+	
+@app.route('/rest/lcd',methods=['POST'])
+@auth.login_required
+def rest_lcd():
+	try:
+		jsonData=json.loads(request.data)
+		
+		line1=str(jsonData["first line"])
+		line2=str(jsonData["second line"])
+		lcd.lcd_clear()
+		time.sleep(1)
+		lcd.lcd_puts(str(line1),1)
+		lcd.lcd_puts(str(line2),2)
+		
+		return jsonify({'temperature':'sad'}), 201
+	except Exception as e:
+		return(str(e))	
+		
+@app.route('/rest/demo',methods=['GET'])
+@auth.login_required
+def rest_demo():
+	try:
+		return jsonify({'temperature':'26/30'}), 201
 	except Exception as e:
 		return(str(e))	
 		

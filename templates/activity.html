@@ -14,6 +14,7 @@
 							<th>IP</th>
 							<th>DATE-TIME</th>
 							<th>Error</th>
+							<th>Report</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -31,10 +32,11 @@
 								<img src="{{ url_for('static', filename='images/ok.png') }}" height="15px">
 							{% endif %}
 							{% if t["Error"]=="1" %}
-								<img src="{{ url_for('static', filename='images/not.png') }}" height="15px">
+								<img src="{{ url_for('static', filename='images/no.png') }}" height="15px">
 							{% endif %}
 							
 							</td>
+							<td>{{t["Report"]}}</td>
 						</tr>
 						{% endfor %}					
 					</tbody>

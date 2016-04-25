@@ -7,19 +7,35 @@
 	<div class="container">
 		{% from "_formhelpers.html" import render_field %}
 		<form method=post action="/register/">
-		
+			<table style="border-spacing:10px; width:40%: text-align:center">
+				<tr>
+					<td>{{ render_field(form.username) }} <br></td>
+					<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+					<td>{{ render_field(form.email) }}<br></td>
+				</tr>
+				<tr>
+					<td>{{ render_field(form.name) }} <br></td>
+					<td>&nbsp;</td>
+					<td>{{ render_field(form.surname) }}<br></td>
+				</tr>
+				<tr>
+					<td>{{ render_field(form.telephone) }} <br></td>
+					<td>&nbsp;</td>
+					<td>{{ render_field(form.doorkey) }}<br></td>
+				</tr>
+				<tr>
+					<td>{{ render_field(form.password) }} <br></td>
+					<td>&nbsp;</td>
+					<td>{{ render_field(form.confirm) }}<br></td>
+				</tr>
+				<tr style="text-align:center">			
+					<td colspan="3"><input type=submit value=Register></td>
+				</tr>
+			</table>
 			<dl>
-				{{ render_field(form.username) }}
-				{{ render_field(form.name) }}
-				{{ render_field(form.surname) }}
-				{{ render_field(form.email) }}
-				{{ render_field(form.telephone) }}
-				{{ render_field(form.doorkey) }}
-				{{ render_field(form.password) }}
-				{{ render_field(form.confirm) }}
-				{{ render_field(form.accept_tos) }}
+
 			</dl>
-			<p><input type=submit value=Register></p>
+			
 		</form>
 		
 		{% if error %}
