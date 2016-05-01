@@ -5,7 +5,8 @@ from flask.ext.httpauth import HTTPBasicAuth
 import pylcdlib #i2c lib
 import json
 from content_management import *
-from wtforms import Form, BooleanField, TextField, PasswordField, validators
+from wtforms import Form, BooleanField, TextField, PasswordField, validators,IntegerField,RadioField,StringField
+from wtforms.widgets import TextArea
 from passlib.hash import sha256_crypt
 from MySQLdb import escape_string as thwart
 from functools import wraps
@@ -19,14 +20,9 @@ from datetime import datetime
 from dbconnect import connection
 import gc 
 
-
 app = Flask(__name__)
 
-
 TOPIC_DICT = Content()
-
-
-
 
 #app.config.from_pyfile('config.py')
 #app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
@@ -34,12 +30,10 @@ TOPIC_DICT = Content()
 
 auth = HTTPBasicAuth()
 
-
 #celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 #celery.conf.update(app.config)
 
 lcd = pylcdlib.lcd(0x3F,1)
-
 
 class RegistrationForm(Form):
 	username=TextField('Username',[validators.Length(min=4, max=20)])
@@ -52,6 +46,12 @@ class RegistrationForm(Form):
 										validators.EqualTo('confirm',message="Passwords must match")])
 	confirm = PasswordField('Repeat Password')
 	
+class SetTextForm(Form):
+	txt_time=TextField('',[validators.Length(min=5, max=5)])
+	txt_process=IntegerField('',[validators.NumberRange(min=0, max=480)])
+	radio_switch = RadioField('Switch', choices=[('On','On'),('Off','Off')])
+	radio_interval = RadioField('Interval', choices=[('Weekdays','WeekDay'),('Weekends','Weekends'),('Always','Always')])
+	note = StringField(u'note', widget=TextArea())
 
 def login_required(f):
 	@wraps(f)
@@ -70,6 +70,79 @@ def logout():
     flash("You have been logged out!")
     gc.collect()
     return redirect(url_for('dashboard'))	
+
+@app.route('/tasks/',methods=['GET','POST'])
+@login_required
+def tasks():
+	try:	
+		data={}
+		DEVICE_LIST=[]
+		form = SetTextForm(request.form)
+		c, conn = connection()
+		c.execute("SELECT id,location,name FROM tb_device")
+		i=0
+		rows = c.fetchall()
+	
+		for row in rows:			
+			data["id"]=row[0]
+			data["location"]=row[1]
+			data["name"]=row[2]			
+			DEVICE_LIST.insert(i,data)
+			data={}
+			i=i+1			
+		
+		if request.method == "POST" and form.validate():
+			_time =form.txt_time.data
+			_process =form.txt_process.data
+			_switch=form.radio_switch.data
+			_note=form.note.data
+			_interval=form.radio_interval.data
+			_device_id=(request.form['device'])
+			trigger=_time.split(':')
+			try:			
+				if int(trigger[0])>23 or int(trigger[1])>60:
+					flash("Invalid data")
+					c.close()
+					conn.close()	
+					return render_template("tasks.html",DEVICE_LIST=DEVICE_LIST,TASK_LIST=TASK_LIST,form=form)
+				else:
+					c.execute("""SELECT uid FROM tb_users WHERE username =(%s)""",session['username'])	
+					_user_id=c.fetchone()[0]	
+					c.execute("""INSERT INTO tb_tasks(device_id,user_id,switch,triggertime,process,period,note,active) VALUES(%d,%d,'%s','%s',%d,'%s','%s',1)"""%(int(_device_id),int(_user_id),str(_switch),str(_time),int(_process),str(_interval),str(_note)))
+					conn.commit()					
+			except Exception as e:
+				c.close()
+				conn.close()
+				flash("Invalid data")
+				return render_template("tasks.html",DEVICE_LIST=DEVICE_LIST,form=form)
+		
+		data={}
+		TASKS_LIST=[]
+		c.execute("SELECT tb_tasks.id,tb_users.username, tb_device.name, tb_device.location,tb_tasks.switch,tb_tasks.triggertime, tb_tasks.process,tb_tasks.period, tb_tasks.note, tb_tasks.active FROM tb_tasks,tb_device,tb_users WHERE tb_users.uid = tb_tasks.user_id AND tb_device.id = tb_tasks.device_id")	
+		i=0
+		rows = c.fetchall()	
+		
+		for row in rows:			
+			data["id"]=row[0]
+			data["username"]=row[1]
+			data["device"]=row[2]+" "+row[3]
+			data["switch"]=row[4]
+			data["triggertime"]=row[5]
+			data["process"]=row[6]
+			data["period"]=row[7]
+			data["note"]=row[8]	
+			data["active"]=row[9]				
+			TASKS_LIST.insert(i,data)
+			data={}
+			i=i+1			
+		c.close()
+		conn.close()					
+		
+		return render_template("tasks.html",DEVICE_LIST=DEVICE_LIST,TASKS_LIST=TASKS_LIST,form=form) 
+				
+	except Exception as e:
+		return(str(e))
+			
 	
 @app.route('/register/',methods=['GET','POST'])
 @login_required
@@ -402,7 +475,8 @@ def rest_switch():
 					serial_data = '120**' if status == "On" else '121**'					
 					ser = serial.Serial('/dev/ttyACM0',9600)
 					ser.writelines(serial_data)
-											
+									
+									
 					report="Passed"		
 					c.execute("""INSERT INTO tb_activity(user_id,device_id,prevstatus,currentstatus,date,IP,error,report) VALUES(%d,%d,'%s','%s','%s','%s',%d,'%s')"""%(user_id,device_id,db_status,status,now,ip,err,report))			
 					c.execute("""UPDATE tb_device SET status='%s' where id = %d"""%(status,int(device_id)))
@@ -439,7 +513,7 @@ def rest_status():
 				data['location']=item[2]
 				data['status']=item[3]
 				data['active']=item[4]
-				
+
 				response[int(item[0])]=data
 				data={}
 			c.close()
@@ -492,12 +566,13 @@ def rest_lcd():
 		
 		line1=str(jsonData["first line"])
 		line2=str(jsonData["second line"])
-		lcd.lcd_clear()
 		time.sleep(1)
-		lcd.lcd_puts(str(line1),1)
-		lcd.lcd_puts(str(line2),2)
+		lcd.lcd_puts(line1,1)
+		time.sleep(2)
+		lcd.lcd_puts(line2,2)
+
 		
-		return jsonify({'temperature':'sad'}), 201
+		return jsonify({'temperature':'sad'}), 200
 	except Exception as e:
 		return(str(e))	
 		
