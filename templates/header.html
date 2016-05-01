@@ -4,7 +4,25 @@
 	<meta lang="utf-16">
 	<title>Smart Home System</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+	
+	<link href="{{ url_for('static', filename='bootstrap-3.3.6-dist/css/bootstrap-theme.css') }}" rel="stylesheet">
+	<link href="{{ url_for('static', filename='bootstrap-3.3.6-dist/css/bootstrap-theme.css.map') }}" rel="stylesheet">
+	<link href="{{ url_for('static', filename='bootstrap-3.3.6-dist/css/bootstrap-theme.min.css') }}" rel="stylesheet">
+	<link href="{{ url_for('static', filename='bootstrap-3.3.6-dist/css/bootstrap-theme.min.css.map') }}" rel="stylesheet">
+	<link href="{{ url_for('static', filename='bootstrap-3.3.6-dist/css/bootstrap.css') }}" rel="stylesheet">
+	<link href="{{ url_for('static', filename='bootstrap-3.3.6-dist/css/bootstrap.css.map') }}" rel="stylesheet">
+	<link href="{{ url_for('static', filename='bootstrap-3.3.6-dist/css/bootstrap.min.css') }}" rel="stylesheet">
+	<link href="{{ url_for('static', filename='bootstrap-3.3.6-dist/css/bootstrap.min.css.map') }}" rel="stylesheet">
+	
+	<link href="{{ url_for('static', filename='bootstrap-3.3.6-dist/fonts/glypicons-halflings-regular.eot') }}" rel="stylesheet">
+	<link href="{{ url_for('static', filename='bootstrap-3.3.6-dist/fonts/glypicons-halflings-regular.svg') }}" rel="stylesheet">
+	<link href="{{ url_for('static', filename='bootstrap-3.3.6-dist/fonts/glypicons-halflings-regular.ttf') }}" rel="stylesheet">
+	<link href="{{ url_for('static', filename='bootstrap-3.3.6-dist/fonts/glypicons-halflings-regular.woff') }}" rel="stylesheet">
+	<link href="{{ url_for('static', filename='bootstrap-3.3.6-dist/fonts/glypicons-halflings-regular.woff2') }}" rel="stylesheet">
+	
+	<link language="javascript" href="{{ url_for('static', filename='bootstrap-3.3.6-dist/js/bootstrap.js') }}" rel="stylesheet">
+	<link language="javascript" href="{{ url_for('static', filename='bootstrap-3.3.6-dist/js/bootstrap.min.js') }}" rel="stylesheet">
+	<link language="javascript" href="{{ url_for('static', filename='bootstrap-3.3.6-dist/js/npm.js') }}" rel="stylesheet">
 	
 	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.11/css/jquery.dataTables.min.css">
 
@@ -15,26 +33,32 @@
 	</script>
 	<script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.10.11/js/jquery.dataTables.min.js">
 	</script>
-	
 	<style type="text/css">
 		#devicecontainer{
 			background-color:#DFDFDF;
 			width:75%;
-			
+			margin-top:20px;
 			padding: 10px 10px 10px 10px;
 		}
 		#activitycontainer{
 			background-color:#DFDFDF;
 			width:100%;
-			
+			margin-top:20px;
 			padding: 10px 10px 10px 10px;
 		}
 		#userlistcontainer{
 			background-color:#DFDFDF;
 			width:80%;
-			
+			margin-top:20px;
 			padding: 10px 10px 10px 10px;
 		}
+		#tasklistcontainer{
+			background-color:#DFDFDF;
+			width:95%;
+			margin-top:20px;
+			padding: 10px 10px 10px 10px;
+		}
+
 	</style>
 	
 		<script type="text/javascript" class="init">
@@ -64,11 +88,13 @@
 				<h5>
 					
 					{% if session.logged_in %}
-						<a href="/devices/"><span class="glyphicon glyphicon-cog" style="color:#232D48"></span> <span style="color:#232D48" >Devices</span>   </a>				  &nbsp;&nbsp;&nbsp;	
-						<a href="/userlist/"><span class="glyphicon glyphicon-user" style="color:#232D48"></span> <span style="color:#232D48" >UserList   </span></a>				  &nbsp;&nbsp;&nbsp;					
+						<a href="/tasks/"><span class="glyphicon glyphicon-calendar" style="color:#232D48"></span> <span style="color:#232D48" >Tasks  </span> </a>								&nbsp;&nbsp;&nbsp;						
+						<a href="/devices/"><span class="glyphicon glyphicon-home" style="color:#232D48"></span> <span style="color:#232D48" >Devices</span>   </a>				  &nbsp;&nbsp;&nbsp;	
+						<a href="/userlist/"><span class="glyphicon glyphicon-user" style="color:#232D48"></span> <span style="color:#232D48" >Users  </span></a>				  &nbsp;&nbsp;&nbsp;					
 						<a href="/activity/"><span class="glyphicon glyphicon-list-alt" style="color:#232D48"></span> <span style="color:#232D48" >Activity  </span> </a>				  &nbsp;&nbsp;&nbsp;	
 						<a href="/register/"><span class="glyphicon glyphicon-plus" style="color:#232D48"></span> <span style="color:#232D48" >Register </span></a>&nbsp;&nbsp;&nbsp;	
-						<a href="/logout/"><span class="glyphicon glyphicon-log-out" style="color:#232D48"></span> <span style="color:#232D48" >Logout  </span> </a>				  &nbsp;&nbsp;&nbsp;						
+						<a href="/logout/"><span class="glyphicon glyphicon-log-out" style="color:#232D48"></span> <span style="color:#232D48" >Logout  </span> </a>
+						
 					{% else %}
 						<a href="/login/"><span class="glyphicon glyphicon-log-in" style="color:#232D48"></span> <span style="color:#232D48" >Login  </span></a>				  &nbsp;&nbsp;&nbsp; 
 

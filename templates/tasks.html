@@ -1,0 +1,115 @@
+{% extends 'header.html' %}
+
+{% block body %}
+
+<div id="addtaskcontainer">
+	<div id="settask">
+	{% from "_formhelpers.html" import render_field %}
+		<form method=post action="/tasks/">
+			<table style="border-spacing:10px; width:100%: text-align:center">
+				<tr>
+					<td>Device:</td>
+					<td></td>
+					<td>Time (HH:MM):</td>
+					<td></td>
+					<td>Process (minute):</td>
+					<td></td>
+					<td>Switch:</td>
+					<td></td>
+					<td>Period:</td>
+					<td></td>
+					<td>Note:</td>
+					<td></td>
+				</tr>
+				<tr style="vertical-align:top;">
+					<td><br>
+						<select name="device">						
+							{% for t in DEVICE_LIST %}
+								<option value="{{t['id']}}">{{t['location']}} {{t['name']}}</option>
+							{% endfor %}
+						</select>
+					</td>
+					<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+					
+					<td>{{ render_field(form.txt_time) }} </td>
+					
+					<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+					
+					<td>{{ render_field(form.txt_process) }}</td>
+					
+					<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+					
+					<td><br>
+						{{ form.radio_switch }}
+					</td>	
+					
+					<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+					
+					<td><br>		
+						{{ form.radio_interval }}
+					</td>
+					
+					<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+					
+					<td><br>
+						{{ form.note(cols="30", rows="4") }}
+					</td>
+					<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+					<td><br><input type=submit value=settask></td>
+				</tr>
+			</table>
+			<dl>
+
+			</dl>
+			
+		</form>
+		
+		{% if error %}
+			<p class="error"><strong>Error: </strong>{{error}}</p>
+		{% endif %}
+	</div>
+	<div id="tasklist">
+		<div id="tasklistcontainer">
+				<table id="example" class="display" cellspacing="0" width="100%">
+					<thead>
+						<tr text-align="left">
+							<th>User</th>
+							<th>Device</th>
+							<th>Switch</th>
+							<th>Time</th>
+							<th>Process</th>
+							<th>Period</th>
+							<th>Note</th>
+							<th>Active</th>
+						</tr>
+					</thead>
+					<tbody>	
+						{% for t in TASKS_LIST %}
+						<tr>
+							<td>{{t["username"]}}</td>
+							<td>{{t["device"]}}</td>
+							<td>{{t["switch"]}}</td>
+							<td>{{t["triggertime"]}}</td>
+							<td>{{t["process"]}} min</td>
+							<td>{{t["period"]}}</td>
+							<td>{{t["note"]}}</td>
+							<td>
+							
+							{% if t["active"]==0 %}
+								<img src="{{ url_for('static', filename='images/no.png') }}" height="15px"> Finished
+							{% endif %}
+							{% if t["active"]==1 %}
+								<img src="{{ url_for('static', filename='images/ok.png') }}" height="15px"> Resuming
+							{% endif %}
+							
+							
+							</td>
+						</tr>
+						{% endfor %}					
+					</tbody>
+				</table>		
+			</div>
+	</div>
+</div>
+
+{% endblock %}

@@ -10,14 +10,22 @@
     <div class="col-md-4">
       <section class="login-form">
         <form method="post" action="/login/">
-          <img src="{{ url_for('static', filename='images/Logo2.png') }}" class="img-responsive" style="max-height:400px" alt="" />
+		
+		<img src="{{ url_for('static', filename='images/Logo2.png') }}" class="img-responsive" style="max-height:400px" alt="" />
 		  <br>
-          <input type="text" class="form-control" placeholder = "Username" name="username" value="{{request.form.username}}">
-		  	  <br>
-			<input type="password" class="form-control" placeholder = "Password" name="password" value="{{request.form.password}}">
-          <br>
-          <div class="pwstrength_viewport_progress"></div>
-			<input class="btn btn-lg btn-primary btn-block" type="submit" value="Login">
+		 <div>
+			<div class="input-icon">
+            <i class="fa fa-user"></i>
+            <input class="form-control placeholder-no-fix" type="text" autocomplete="off" placeholder="username" name="username" value="{{request.form.username}}" /> </div>
+         </div>
+
+		<div>
+			<div class="input-icon">
+           <i class="fa fa-lock"></i>
+            <input class="form-control placeholder-no-fix" type="password" autocomplete="off" placeholder="password" name="password"  value="{{request.form.password}}" /> </div>
+        </div>
+		
+      <input class="btn btn-lg btn-primary btn-block" type="submit" value="Login">
           
         </form>
         
