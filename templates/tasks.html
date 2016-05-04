@@ -80,7 +80,8 @@
 							<th>Process</th>
 							<th>Period</th>
 							<th>Note</th>
-							<th>Active</th>
+							<th>Created Time</th>
+							<th>&nbsp;</th>
 						</tr>
 					</thead>
 					<tbody>	
@@ -93,21 +94,14 @@
 							<td>{{t["process"]}} min</td>
 							<td>{{t["period"]}}</td>
 							<td>{{t["note"]}}</td>
-							<td>
-							
-							{% if t["active"]==0 %}
-								<img src="{{ url_for('static', filename='images/no.png') }}" height="15px"> Finished
-							{% endif %}
-							{% if t["active"]==1 %}
-								<img src="{{ url_for('static', filename='images/ok.png') }}" height="15px"> Resuming
-							{% endif %}
-							
-							
+							<td>{{t["datetime"]}}</td>
+							<td> 
+								<a href="/deltask/{{t['id']}}"><img src="{{ url_for('static', filename='images/trash.png') }}" height="17px">Kaldır </a>
 							</td>
 						</tr>
 						{% endfor %}					
 					</tbody>
-				</table>		
+				</table>	
 			</div>
 	</div>
 </div>

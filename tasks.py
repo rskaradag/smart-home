@@ -18,10 +18,11 @@ def addminute(hour,minute):
 	currentHour = datetime.now().hour
 	hour=currentHour
 
-	minute = currentMinute + minute
+	minute = int(currentMinute) + int(minute)
 	hour = hour + minute/60
 	minute=minute % 60
 	hour=hour%24
+	print hour,minute
 	return hour,minute
 
 
@@ -32,14 +33,14 @@ def sendserial(_id,_status):
 	return signal
 	
 def adddetent(_taskid,_deviceid,_switch,_hour,_minute):
+	data={}
 	data['id']=_taskid
 	data['switch']=_switch
-	data['device_id']=_switch
+	data['device_id']=_deviceid
 	data['hour']=_hour
 	data['minute']=_minute
 	
 	detentlist[int(_taskid)]=data
-	data={}
 	
 def syn_tasks():
 	c, conn = connection()
@@ -94,27 +95,31 @@ ser = serial.Serial('/dev/ttyACM0',9600)
 	
 while True:
 	
-	if baseminute!=datetime.now().minute:
-		syn_tasks()
+	if baseminute==datetime.now().minute:		
 		currentHour=datetime.now().hour
 		for item in tasklist:
 			data=tasklist[item]
-			if data['hour']==currentHour and data['minute']==currentMinute:
+			if str(data['hour'])==str(currentHour) and str(data['minute'])==str(baseminute) and (data['id'] in detentlist) == False:
+				print data['hour'],currentHour ,data['minute'],baseminute
 				ser.writelines(sendserial(data['device_id'],data['switch']))
 				time.sleep(1)
 				insert_db(data['switch'],data['device_id'])
-				hour,minute=addminute(data['hour'],data['minute'])
+				hour,minute=addminute(data['hour'],data['process'])
 				adddetent(data['id'],data['device_id'],"On" if data['switch']=="Off" else "Off",hour,minute)
-		
-		for item2 in detentlist:
+				syn_tasks()
+
+		for item2 in detentlist.keys():
 			data2=detentlist[item2]
-			if data2['hour']==currentHour and data2['minute']==currentMinute:
+			if str(data2['hour'])==str(currentHour) and str(data2['minute'])==str(baseminute):
 				ser.writelines(sendserial(data2['device_id'],data2['switch']))
 				time.sleep(1)
 				insert_db(data2['switch'],data2['device_id'])
 				finishtask(data2['id'])
 				del detentlist[data2['id']]
 				
+	else:
 		baseminute=datetime.now().minute
+		print detentlist
+		syn_tasks()
 	
 

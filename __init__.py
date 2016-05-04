@@ -33,7 +33,7 @@ auth = HTTPBasicAuth()
 #celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 #celery.conf.update(app.config)
 
-lcd = pylcdlib.lcd(0x3F,1)
+#lcd = pylcdlib.lcd(0x3F,1)
 
 class RegistrationForm(Form):
 	username=TextField('Username',[validators.Length(min=4, max=20)])
@@ -53,6 +53,12 @@ class SetTextForm(Form):
 	radio_interval = RadioField('Interval', choices=[('Weekdays','WeekDay'),('Weekends','Weekends'),('Always','Always')])
 	note = StringField(u'note', widget=TextArea())
 
+def sendserial(_id,_status):
+	signal= str(_id) if _id>10 else "0"+str(_id)
+	signal=signal + ("1" if _status=="On" else "0")
+	signal=signal +"**"
+	return signal	
+	
 def login_required(f):
 	@wraps(f)
 	def wrap(*args, **kwargs):
@@ -108,7 +114,9 @@ def tasks():
 				else:
 					c.execute("""SELECT uid FROM tb_users WHERE username =(%s)""",session['username'])	
 					_user_id=c.fetchone()[0]	
-					c.execute("""INSERT INTO tb_tasks(device_id,user_id,switch,triggertime,process,period,note,active) VALUES(%d,%d,'%s','%s',%d,'%s','%s',1)"""%(int(_device_id),int(_user_id),str(_switch),str(_time),int(_process),str(_interval),str(_note)))
+					now = datetime.now()
+					now =now.strftime('%Y-%m-%d %H:%M:%S')	
+					c.execute("""INSERT INTO tb_tasks(device_id,user_id,switch,triggertime,process,period,note,active,datetime) VALUES(%d,%d,'%s','%s',%d,'%s','%s',1,'%s')"""%(int(_device_id),int(_user_id),str(_switch),str(_time),int(_process),str(_interval),str(_note),str(now)))
 					conn.commit()					
 			except Exception as e:
 				c.close()
@@ -118,20 +126,21 @@ def tasks():
 		
 		data={}
 		TASKS_LIST=[]
-		c.execute("SELECT tb_tasks.id,tb_users.username, tb_device.name, tb_device.location,tb_tasks.switch,tb_tasks.triggertime, tb_tasks.process,tb_tasks.period, tb_tasks.note, tb_tasks.active FROM tb_tasks,tb_device,tb_users WHERE tb_users.uid = tb_tasks.user_id AND tb_device.id = tb_tasks.device_id")	
+		c.execute("SELECT tb_tasks.id,tb_users.username, tb_device.name, tb_device.location,tb_tasks.switch,tb_tasks.triggertime, tb_tasks.process,tb_tasks.period, tb_tasks.note, tb_tasks.active, tb_tasks.datetime FROM tb_tasks,tb_device,tb_users WHERE tb_users.uid = tb_tasks.user_id AND tb_device.id = tb_tasks.device_id")	
 		i=0
 		rows = c.fetchall()	
 		
 		for row in rows:			
 			data["id"]=row[0]
 			data["username"]=row[1]
-			data["device"]=row[2]+" "+row[3]
+			data["device"]=row[3]+" "+row[2]
 			data["switch"]=row[4]
 			data["triggertime"]=row[5]
 			data["process"]=row[6]
 			data["period"]=row[7]
 			data["note"]=row[8]	
-			data["active"]=row[9]				
+			data["active"]=row[9]	
+			data["datetime"]=row[10]			
 			TASKS_LIST.insert(i,data)
 			data={}
 			i=i+1			
@@ -229,6 +238,7 @@ def homepage():
 			return render_template("login.html")
 	except:
 		return render_template("login.html")
+
 @app.route('/userlist/')
 @login_required
 def userlist():
@@ -327,6 +337,7 @@ def activity():
 
 	except Exception as e:
 		flash(e)
+
 @app.route('/login/', methods=['GET','POST'])
 def login_page():
 	error = ''
@@ -356,8 +367,7 @@ def login_page():
 		flash(e)
 		error = "Invalid credentials, try again."
 		return render_template("login.html", error = error)  
-		
-		
+			
 @app.route('/dashboard/')
 @login_required
 def dashboard():
@@ -471,10 +481,9 @@ def rest_switch():
 					now =now.strftime('%Y-%m-%d %H:%M:%S')						
 					ip=request.remote_addr
 					err=0
-					
-					serial_data = '120**' if status == "On" else '121**'					
+										
 					ser = serial.Serial('/dev/ttyACM0',9600)
-					ser.writelines(serial_data)
+					ser.writelines(sendserial(device_id,status))
 									
 									
 					report="Passed"		
@@ -568,7 +577,7 @@ def rest_lcd():
 		line2=str(jsonData["second line"])
 		time.sleep(1)
 		lcd.lcd_puts(line1,1)
-		time.sleep(2)
+		time.sleep(1)
 		lcd.lcd_puts(line2,2)
 
 		
@@ -584,5 +593,23 @@ def rest_demo():
 	except Exception as e:
 		return(str(e))	
 		
+
+@app.route('/deltask/<int:task_id>',methods=['GET'])
+@auth.login_required
+def deltask(task_id):
+	c,conn=connection()
+	c.execute("DELETE FROM tb_tasks WHERE id=%d"%(task_id))
+	conn.commit()
+	c.close()
+	conn.close()
+	return redirect(url_for('tasks'))
+
+
+@app.route('/rest/tasks',methods=['POST'])
+@auth.login_required
+def rest_tasks():
+	return("test")
+
+
 if __name__ == "__main__":
     app.run(debug=True)
